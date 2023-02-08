@@ -473,11 +473,49 @@ def start_iperf_server(client_ip) -> None:
         iperf_cmd = 'iperf3 -s -p ' + str(port) + ' -D'
         os.system(iperf_cmd)
 
+# start mgen server in background
+def start_mgen_server(client_ip, client_index) -> None:
+
+    default_port = 5201
+
+    logging.info("Create mgen log files directory")
+    os.system("mkdir ./mgen_logs")
+
+    for c_ip in client_ip:
+        port_offset = int(c_ip.split('.')[-1])
+        port = default_port + port_offset
+        logging.info('Starting mgen server in background on port ' + str(port))
+
+        command = "mgen event \"listen udp " + str(port) + "\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
+        run_tmux_command(command, str(client_index[c_ip]) + "_serv")
+
+# start mgen client
+def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, client_index: int) -> None:
+
+    default_port = 5201
+
+    # derive port offset from my srsLTE IP
+    port_offset = int(client_ip.split('.')[-1])
+    port = default_port + port_offset
+
+    # first modify the mgen scenario to have the right IP and port
+    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn modified_" + str(client_index) + ".mgn")
+
+    os.system("sed -i 's/IP_PLACEHOLDER/" + server_ip + "/g' ./mgen_scenarios/modified_" + str(client_index) + ".mgn")
+    os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/modified_" + str(client_index) + ".mgn")
+    mgen_cmd = "mgen input ./mgen_scenarios/modified_" + str(client_index) + ".mgn"
+
+    # wrap command in while loop to repeat it if it fails to start
+    # (e.g., if ue is not yet connected to the bs)
+    loop_cmd = 'while ! %s; do sleep 5; done' % (mgen_cmd)
+
+    logging.info('Starting mgen client toward: ' + mgen_cmd)
+    run_tmux_command(loop_cmd, tmux_session_name)
 
 # write scope configuration, srsLTE parameters and start cellular applicaitons
 def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
     capture_pkts: bool, config_params: dict, write_config_parameters: bool,
-    generic_testbed: bool, node_is_bs: bool, ue_id: int):
+    generic_testbed: bool, node_is_bs: bool, ue_id: int, mgen: bool):
 
     # define name of the tmux session in which commands are run
     tmux_session_name = 'scope'
@@ -582,6 +620,17 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
             else:
                 start_iperf_server(srs_col_ip_mapping.values())
 
+        # start mgen clients
+        client_ips = srs_col_ip_mapping.values()
+        map_ips_to_index = {v: idx for (idx, v) in enumerate(client_ips)}
+        if mgen:
+            if generic_testbed:
+                logging.info('Not running on Colosseum. Skipping instantiation of mgen server.')
+            elif iperf:
+                logging.info('iPerf already in use, skipping instantiation of mgen server.')
+            else:
+                start_mgen_server(client_ips, map_ips_to_index)
+
     else:
         logging.info('Starting user configuration...')
 
@@ -601,8 +650,13 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
             # get mapping of srsLTE UE addresses and IPs
             srs_col_ip_mapping, _ = get_srsue_ip_mapping(bs_id, nodes_ip, srslte_config_dir)
 
+            client_ips = srs_col_ip_mapping.values()
+            map_ips_to_index = {v: idx for (idx, v) in enumerate(client_ips)}
+
             # compute my srsLTE IP and extract it from the returned dictionary
             my_srslte_ip, _ = get_srsue_ip_mapping(bs_id, {my_node_id: my_ip}, srslte_config_dir)
+            # start mgen clients
+            
             my_srslte_ip = my_srslte_ip[my_ip]
             logging.info('My srsLTE IP: ' + my_srslte_ip)
 
@@ -645,6 +699,19 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
 
                 start_iperf_client(tmux_session_name, srslte_bs_ip, my_srslte_ip)
 
+        
+        if mgen:
+            if generic_testbed:
+                logging.info('Not running on Colosseum. Skipping instantiation of iPerf3 client.')
+            elif iperf:
+                logging.info('iPerf already in use, skipping instantiation of mgen server.')
+            else:
+                sleep_time = 10
+                logging.info('mgen option detected, sleeping ' + str(sleep_time) + 's')
+                time.sleep(sleep_time)
+
+                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, map_ips_to_index[my_srslte_ip])
+
 
 if __name__ == '__main__':
 
@@ -661,6 +728,7 @@ if __name__ == '__main__':
     parser.add_argument('--config-file', type=str, default='', help='json-formatted configuration file file to parse.\
         The other arguments are ignored if config file is passed')
     parser.add_argument('--iperf', help='Generate traffic through iperf3, downlink only. Only used if running on Colosseum', action='store_true')
+    parser.add_argument('--mgen', help='Generate traffic through mgen, downlink only. Only used if running on Colosseum and iPerf is unused', action='store_true')
     parser.add_argument('--users-bs', type=int, default=3, help='Maximum number of users per base station')
     parser.add_argument('--colcli', help='Use colosseumcli APIs to get list of active nodes.\
         This parameter is specific to Colosseum and it is only available in interactive mode', action='store_true')
@@ -745,7 +813,8 @@ if __name__ == '__main__':
                   'force-ul-modulation': args.force_ul_modulation,
                   'slice-users': args.slice_users,
                   'bs-config': args.bs_config,
-                  'ue-config': args.ue_config}
+                  'ue-config': args.ue_config,
+                  'mgen': args.mgen}
     else:
         # parse config file
         # filename = os.path.expanduser('~/radio_api/' + args.config_file)
@@ -830,7 +899,7 @@ if __name__ == '__main__':
         config['colosseumcli'], config['capture-pkts'],
         config_params, config['write-config-parameters'],
         config['generic-testbed'], config['node-is-bs'],
-        config['ue-id'])
+        config['ue-id'], config['mgen'])
 
     # set LTE transceiver state to active
     time.sleep(2)
