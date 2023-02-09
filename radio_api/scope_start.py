@@ -499,11 +499,12 @@ def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, cl
     port = default_port + port_offset
 
     # first modify the mgen scenario to have the right IP and port
-    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn modified_" + str(client_index) + ".mgn")
 
-    os.system("sed -i 's/IP_PLACEHOLDER/" + server_ip + "/g' ./mgen_scenarios/modified_" + str(client_index) + ".mgn")
-    os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/modified_" + str(client_index) + ".mgn")
-    mgen_cmd = "mgen input ./mgen_scenarios/modified_" + str(client_index) + ".mgn"
+    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn ./mgen_scenarios/mgn_modified_" + str(client_index) + ".$
+
+    os.system("sed -i 's/IP_PLACEHOLDER/" + server_ip + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
+    os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mg$
+    mgen_cmd = "mgen input ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn"
 
     # wrap command in while loop to repeat it if it fails to start
     # (e.g., if ue is not yet connected to the bs)
@@ -511,6 +512,7 @@ def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, cl
 
     logging.info('Starting mgen client toward: ' + mgen_cmd)
     run_tmux_command(loop_cmd, tmux_session_name)
+
 
 # write scope configuration, srsLTE parameters and start cellular applicaitons
 def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
@@ -710,7 +712,7 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
                 logging.info('mgen option detected, sleeping ' + str(sleep_time) + 's')
                 time.sleep(sleep_time)
 
-                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, map_ips_to_index[my_srslte_ip])
+                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
 
 
 if __name__ == '__main__':
