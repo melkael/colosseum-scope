@@ -486,7 +486,7 @@ def start_mgen_server(client_ip, client_index) -> None:
         port = default_port + port_offset
         logging.info('Starting mgen server in background on port ' + str(port))
 
-        command = "mgen event \"listen udp " + str(port) + "\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
+        command = "mgen event \\\"listen udp " + str(port) + "\\\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
         run_tmux_command(command, str(client_index[c_ip]) + "_serv")
 
 # start mgen client
@@ -500,10 +500,10 @@ def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, cl
 
     # first modify the mgen scenario to have the right IP and port
 
-    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn ./mgen_scenarios/mgn_modified_" + str(client_index) + ".$
+    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
 
     os.system("sed -i 's/IP_PLACEHOLDER/" + server_ip + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
-    os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mg$
+    os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
     mgen_cmd = "mgen input ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn"
 
     # wrap command in while loop to repeat it if it fails to start
