@@ -4,7 +4,8 @@
 # originate traffic flow
 
 # 50 byte messages, 500 us transfer interval
-0.0 ON 0 UDP DST IP_PLACEHOLDER/PORT_PLACEHOLDER PERIODIC [3000.0 50]
+0.0 ON 3 UDP DST IP_PLACEHOLDER/PORT_PLACEHOLDER PERIODIC [3000.0 50]
 
-120.0 OFF 0
+# stop traffic flow
+120.0 OFF 3
 

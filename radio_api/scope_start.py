@@ -481,13 +481,17 @@ def start_mgen_server(client_ip, client_index) -> None:
     logging.info("Create mgen log files directory")
     os.system("mkdir ./mgen_logs")
 
+    port_list = []
     for c_ip in client_ip:
         port_offset = int(c_ip.split('.')[-1])
         port = default_port + port_offset
-        logging.info('Starting mgen server in background on port ' + str(port))
 
-        command = "mgen event \\\"listen udp " + str(port) + "\\\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
-        run_tmux_command(command, str(client_index[c_ip]) + "_serv")
+        port_list.append(str(port))
+
+    logging.info('Starting mgen server in background')
+
+    command = "mgen event \\\"listen udp " + ','.join(port_list) + "\\\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
+    run_tmux_command(command, str(client_index[c_ip]) + "_serv")
 
 # start mgen client
 def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, client_index: int) -> None:
