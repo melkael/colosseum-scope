@@ -530,6 +530,7 @@ def start_scapy_client(tmux_session_name: str, server_ip: str, client_ip: str, c
     # derive port offset from my srsLTE IP
     port_offset = int(client_ip.split('.')[-1])
     port = default_port + port_offset
+    interface = "tun_srsue"
 
     scapy_cmd = f"python3 ./scapy_client.py ./pcaps/{client_index}.pcapng {interface} {server_ip} {port} {client_index}"
 
@@ -551,6 +552,7 @@ def custom_action(p):
 
 def start_scapy_server()
     default_port = 5201
+    iface = "srs_spgw_sgi"
 
     port_list = []
     for c_ip in client_ip:
@@ -680,11 +682,11 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
         map_ips_to_index = {v: idx for (idx, v) in enumerate(client_ips)}
         if mgen:
             if generic_testbed:
-                logging.info('Not running on Colosseum. Skipping instantiation of mgen server.')
+                logging.info('Not running on Colosseum. Skipping instantiation of scapy server.')
             elif iperf:
-                logging.info('iPerf already in use, skipping instantiation of mgen server.')
+                logging.info('iPerf already in use, skipping instantiation of scapy server.')
             else:
-                start_mgen_server(client_ips, map_ips_to_index)
+                start_scapy_server(client_ips, map_ips_to_index)
 
     else:
         logging.info('Starting user configuration...')
@@ -762,10 +764,10 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
                 logging.info('iPerf already in use, skipping instantiation of mgen server.')
             else:
                 sleep_time = 10
-                logging.info('mgen option detected, sleeping ' + str(sleep_time) + 's')
+                logging.info('scpay option detected, sleeping ' + str(sleep_time) + 's')
                 time.sleep(sleep_time)
 
-                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
+                start_scapy_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
 
 
 if __name__ == '__main__':
