@@ -15,10 +15,15 @@ import re
 import shutil
 import subprocess
 import time
+import struct
+from scapy.all import *
+
 
 import constants
 from scope_api import *
 from support_functions import run_tmux_command
+
+
 
 # get list of nodes in active reservation using colosseumcli rf radiomap
 # NOTE: scenarios must have started already
@@ -516,6 +521,50 @@ def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, cl
 
     logging.info('Starting mgen client toward: ' + mgen_cmd)
     run_tmux_command(loop_cmd, tmux_session_name)
+
+# first load the file
+
+def start_scapy_client(tmux_session_name: str, server_ip: str, client_ip: str, client_index: int) -> None:
+
+    default_port = 5201
+    # derive port offset from my srsLTE IP
+    port_offset = int(client_ip.split('.')[-1])
+    port = default_port + port_offset
+
+    scapy_cmd = f"python3 ./scapy_client.py ./pcaps/{client_index}.pcapng {interface} {server_ip} {port} {client_index}"
+
+    loop_cmd = 'while ! %s; do sleep 5; done' % (scapy_cmd)
+
+    logging.info('Starting scapy client toward: ' + scapy_cmd)
+    run_tmux_command(loop_cmd, tmux_session_name)
+
+csv_handler = open("packets.csv", 'a')
+def custom_action(p):
+    payload = bytearray(p.load)
+
+    coloNodeID = payload[9]
+    t = struct.unpack('d', payload[0:8])[0]
+
+    w = writer(csv_handler)
+    w.writerow([coloNodeID, time.time()-t, time.time()])
+    return #f"{coloNodeID} {time.time() - t}"
+
+def start_scapy_server()
+    default_port = 5201
+
+    port_list = []
+    for c_ip in client_ip:
+        port_offset = int(c_ip.split('.')[-1])
+        port = default_port + port_offset
+
+        port_list.append(str(port))
+
+    logging.info('Starting mgen server in background')
+
+    command = f"python3 ./scapy_server.py {iface} {" ".join(ports)}"
+    run_tmux_command(command, tmux_session_name)
+#scapy_cmd = f"python3 ./scapy_server.py {ports}"
+#    sniff(filter="udp port 5000", iface="lo", count=5, prn=custom_action)
 
 
 # write scope configuration, srsLTE parameters and start cellular applicaitons
