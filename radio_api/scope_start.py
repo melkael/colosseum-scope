@@ -550,7 +550,7 @@ def custom_action(p):
     w.writerow([coloNodeID, time.time()-t, time.time()])
     return #f"{coloNodeID} {time.time() - t}"
 
-def start_scapy_server():
+def start_scapy_server(client_ip, map_ips_to_index):
     default_port = 5201
     iface = "srs_spgw_sgi"
 
@@ -562,9 +562,9 @@ def start_scapy_server():
         port_list.append(str(port))
 
     logging.info('Starting mgen server in background')
-    ports = " ".join(ports)
+    ports = " ".join(port_list)
     command = f"python3 ./scapy_server.py {iface} {ports}"
-    run_tmux_command(command, tmux_session_name)
+    run_tmux_command(command, "server")
 #scapy_cmd = f"python3 ./scapy_server.py {ports}"
 #    sniff(filter="udp port 5000", iface="lo", count=5, prn=custom_action)
 
