@@ -550,7 +550,7 @@ def custom_action(p):
     w.writerow([coloNodeID, time.time()-t, time.time()])
     return #f"{coloNodeID} {time.time() - t}"
 
-def start_scapy_server(client_ip, map_ips_to_index):
+def start_scapy_server(client_ip, tmux_session_name):
     default_port = 5201
     iface = "srs_spgw_sgi"
 
@@ -564,7 +564,7 @@ def start_scapy_server(client_ip, map_ips_to_index):
     logging.info('Starting mgen server in background')
     ports = " ".join(port_list)
     command = f"python3 ./scapy_server.py {iface} {ports}"
-    run_tmux_command(command, "server")
+    run_tmux_command(command, tmux_session_name)
 #scapy_cmd = f"python3 ./scapy_server.py {ports}"
 #    sniff(filter="udp port 5000", iface="lo", count=5, prn=custom_action)
 
@@ -686,7 +686,7 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
             elif iperf:
                 logging.info('iPerf already in use, skipping instantiation of scapy server.')
             else:
-                start_scapy_server(client_ips, map_ips_to_index)
+                start_scapy_server(client_ips, tmux_session_name)
 
     else:
         logging.info('Starting user configuration...')
