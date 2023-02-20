@@ -20,22 +20,27 @@ def replay_pcap_udp(pcap, sending_interface, ip_dest, port_dest, coloNodeID):
     s = conf.L2socket(iface=sending_interface)
 
     for (idx, p) in enumerate(packets):
-        print(f"{idx+1}")
+        #print(f"{idx+1}")
         timer = convertScapyTimeToFloat(p.time)
         time.sleep(timer-clk)
         clk = convertScapyTimeToFloat(p.time)
-        if p.len >= 9:
-            payload = bytearray(p.load)
+        #print(p.len)
+        if p.len >= 9+28:
+            #print(p.len)
+            payload = bytearray(p.len-28)
+            #print(len(payload))
+            #print()
             t = time.time()
             b = struct.pack('d', t)
             payload[0:8] = b
             payload[9]   = coloNodeID
             t2 = time.time()
 
-            p["IP"].dest   = ip_dest
-            p["UDP"].dport = port_dest
-            p["Raw"].load  = payload
+            #p["IP"].dest   = ip_dest
+            #p["UDP"].dport = port_dest
+            #p["Raw"].load  = payload
             s.send(IP(dst=ip_dest)/UDP(dport=port_dest)/Raw(load=payload))
+            print(payload)
 
 
 pcap = sys.argv[1]
