@@ -7,15 +7,20 @@ def convertScapyTimeToFloat(a):
     return float(repr(a)[9:-2])
 
 def replay_pcap_udp(pcap, sending_interface, ip_dest, port_dest, coloNodeID):
-    packets = sniff(offline=pcap)
+    packets = PcapNgReader(pcap)
+    first_packet = next(packets)
 
-    clk = convertScapyTimeToFloat(packets[0].time)
+
+    # we reload because we want to include the first packet too
+    packets = PcapNgReader(pcap)
+
+    clk = convertScapyTimeToFloat(first_packet.time)
     show_interfaces()
     #print(get_if_list())
     s = conf.L2socket(iface=sending_interface)
 
     for (idx, p) in enumerate(packets):
-        print(f"{idx+1}/{len(packets)}")
+        print(f"{idx+1}")
         timer = convertScapyTimeToFloat(p.time)
         time.sleep(timer-clk)
         clk = convertScapyTimeToFloat(p.time)
@@ -30,7 +35,8 @@ def replay_pcap_udp(pcap, sending_interface, ip_dest, port_dest, coloNodeID):
             p["IP"].dest   = ip_dest
             p["UDP"].dport = port_dest
             p["Raw"].load  = payload
-            s.send(p)
+            s.send(IP(dst=ip_dest)/UDP(dport=port_dest)/Raw(load=payload))
+
 
 pcap = sys.argv[1]
 iface = sys.argv[2]
