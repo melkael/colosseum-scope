@@ -7,7 +7,7 @@ def convertScapyTimeToFloat(a):
     return float(repr(a)[9:-2])
 
 def replay_pcap_udp(pcap, sending_interface, ip_dest, port_dest, coloNodeID):
-    packets = sniff(offline=pcap, filter = "udp")
+    packets = sniff(offline=pcap)
 
     clk = convertScapyTimeToFloat(packets[0].time)
     show_interfaces()
