@@ -532,23 +532,12 @@ def start_scapy_client(tmux_session_name: str, server_ip: str, client_ip: str, c
     port = default_port + port_offset
     interface = "tun_srsue"
 
-    scapy_cmd = f"python3 ./scapy_client.py ./UEs/{client_index}.pcapng {interface} {server_ip} {port} {client_index}"
+    scapy_cmd = f"python3 ./scapy_client.py ./UEs/{client_index}.pcapng {interface} {server_ip} {port} {client_index} 5"
 
     loop_cmd = 'while ! %s; do sleep 5; done' % (scapy_cmd)
 
     logging.info('Starting scapy client toward: ' + scapy_cmd)
     run_tmux_command(loop_cmd, tmux_session_name)
-
-csv_handler = open("packets.csv", 'a')
-def custom_action(p):
-    payload = bytearray(p.load)
-
-    coloNodeID = payload[9]
-    t = struct.unpack('d', payload[0:8])[0]
-
-    w = writer(csv_handler)
-    w.writerow([coloNodeID, time.time()-t, time.time()])
-    return #f"{coloNodeID} {time.time() - t}"
 
 def start_scapy_server(client_ip, tmux_session_name):
     default_port = 5201
