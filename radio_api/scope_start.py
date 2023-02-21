@@ -553,7 +553,8 @@ def start_scapy_server(client_ip, tmux_session_name):
     logging.info('Starting mgen server in background')
     ports = " ".join(port_list)
     command = f"sniff {iface} {ports} > packets.csv"
-    run_tmux_command(command, tmux_session_name)
+    loop_cmd = 'while ! %s; do sleep 5; done' % (command)
+    run_tmux_command(loop_cmd, tmux_session_name)
 #scapy_cmd = f"python3 ./scapy_server.py {ports}"
 #    sniff(filter="udp port 5000", iface="lo", count=5, prn=custom_action)
 
