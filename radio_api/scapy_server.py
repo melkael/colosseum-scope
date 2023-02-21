@@ -10,6 +10,7 @@ csv_handler = open("packets.csv", 'a')
 
 def custom_action(p):
     payload = bytearray(p.load)
+    #print(payload)
 
     coloNodeID = payload[9]
     t = struct.unpack('d', payload[0:8])[0]
@@ -21,4 +22,5 @@ def custom_action(p):
 
 iface = sys.argv[1]
 ports = " or ".join(sys.argv[2:])
+print(ports)
 sniff(filter=f"udp port {ports}", iface=iface, prn=custom_action)

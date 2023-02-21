@@ -39,8 +39,8 @@ def replay_pcap_udp(pcap, sending_interface, ip_dest, port_dest, coloNodeID):
             #p["IP"].dest   = ip_dest
             #p["UDP"].dport = port_dest
             #p["Raw"].load  = payload
-            s.send(IP(dst=ip_dest)/UDP(dport=port_dest)/Raw(load=payload))
-            print(payload)
+            s.send(IP(dst=ip_dest)/UDP(dport=port_dest, sport=12345)/Raw(load=payload))
+            #print(payload)
 
 
 pcap = sys.argv[1]
