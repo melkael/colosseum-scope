@@ -676,7 +676,7 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
             elif iperf:
                 logging.info('iPerf already in use, skipping instantiation of scapy server.')
             else:
-                start_scapy_server(client_ips, tmux_session_name)
+                start_mgen_server(client_ips, tmux_session_name)
 
     else:
         logging.info('Starting user configuration...')
@@ -757,7 +757,7 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
                 logging.info('scpay option detected, sleeping ' + str(sleep_time) + 's')
                 time.sleep(sleep_time)
 
-                start_scapy_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
+                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
 
 
 if __name__ == '__main__':
