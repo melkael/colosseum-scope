@@ -479,7 +479,7 @@ def start_iperf_server(client_ip) -> None:
         os.system(iperf_cmd)
 
 # start mgen server in background
-def start_mgen_server(client_ip, client_index) -> None:
+def start_mgen_server(client_ip, client_index, mgen_file) -> None:
 
     default_port = 5201
 
@@ -492,14 +492,16 @@ def start_mgen_server(client_ip, client_index) -> None:
         port = default_port + port_offset
 
         port_list.append(str(port))
+        ports = ",".join(port_list)
 
     logging.info('Starting mgen server in background')
+    command = f"mgen event \\\"listen udp {ports}\\\" output ./mgen_logs/{mgen_file}.log"
 
-    command = "mgen event \\\"listen udp " + ','.join(port_list) + "\\\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
-    run_tmux_command(command, str(client_index[c_ip]) + "_serv")
+    #command = "mgen event \\\"listen udp " + ','.join(port_list) + "\\\" output ./mgen_logs/" + str(client_index[c_ip]) + ".log"
+    run_tmux_command(command, "scope")
 
 # start mgen client
-def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, client_index: int) -> None:
+def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, client_index: int, mgen_file: str) -> None:
 
     default_port = 5201
 
@@ -509,7 +511,7 @@ def start_mgen_client(tmux_session_name: str, server_ip: str, client_ip: str, cl
 
     # first modify the mgen scenario to have the right IP and port
 
-    os.system("cp ./mgen_scenarios/" + str(client_index) + ".mgn ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
+    os.system(f"cp ./mgen_scenarios/{mgen_file}_{client_index}.mgn ./mgen_scenarios/mgn_modified_{client_index}.mgn")
 
     os.system("sed -i 's/IP_PLACEHOLDER/" + server_ip + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
     os.system("sed -i 's/PORT_PLACEHOLDER/" + str(port) + "/g' ./mgen_scenarios/mgn_modified_" + str(client_index) + ".mgn")
@@ -562,7 +564,7 @@ def start_scapy_server(client_ip, tmux_session_name):
 # write scope configuration, srsLTE parameters and start cellular applicaitons
 def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
     capture_pkts: bool, config_params: dict, write_config_parameters: bool,
-    generic_testbed: bool, node_is_bs: bool, ue_id: int, mgen: bool):
+    generic_testbed: bool, node_is_bs: bool, ue_id: int, mgen: bool, mgen_file: str):
 
     # define name of the tmux session in which commands are run
     tmux_session_name = 'scope'
@@ -676,7 +678,7 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
             elif iperf:
                 logging.info('iPerf already in use, skipping instantiation of scapy server.')
             else:
-                start_mgen_server(client_ips, tmux_session_name)
+                start_mgen_server(client_ips, tmux_session_name, mgen_file)
 
     else:
         logging.info('Starting user configuration...')
@@ -754,10 +756,10 @@ def run_scope(bs_ue_num: int, iperf: bool, use_colosseumcli: bool,
                 logging.info('iPerf already in use, skipping instantiation of mgen server.')
             else:
                 sleep_time = 10
-                logging.info('scpay option detected, sleeping ' + str(sleep_time) + 's')
+                logging.info('mgen option detected, sleeping ' + str(sleep_time) + 's')
                 time.sleep(sleep_time)
 
-                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id)
+                start_mgen_client(tmux_session_name, srslte_bs_ip, my_srslte_ip, my_node_id, mgen_file)
 
 
 if __name__ == '__main__':
@@ -776,6 +778,7 @@ if __name__ == '__main__':
         The other arguments are ignored if config file is passed')
     parser.add_argument('--iperf', help='Generate traffic through iperf3, downlink only. Only used if running on Colosseum', action='store_true')
     parser.add_argument('--mgen', help='Generate traffic through mgen, downlink only. Only used if running on Colosseum and iPerf is unused', action='store_true')
+    parser.add_argument('--mgen_file', help='Defines the file prefix used by each UE to launch mgen. Eg if is "test", scope will run mgen using test_2.mgn on UE 2', action='store_true')
     parser.add_argument('--users-bs', type=int, default=3, help='Maximum number of users per base station')
     parser.add_argument('--colcli', help='Use colosseumcli APIs to get list of active nodes.\
         This parameter is specific to Colosseum and it is only available in interactive mode', action='store_true')
@@ -861,7 +864,8 @@ if __name__ == '__main__':
                   'slice-users': args.slice_users,
                   'bs-config': args.bs_config,
                   'ue-config': args.ue_config,
-                  'mgen': args.mgen}
+                  'mgen': args.mgen,
+                  'mgen_file': args.mgen_file}
     else:
         # parse config file
         # filename = os.path.expanduser('~/radio_api/' + args.config_file)
@@ -946,7 +950,7 @@ if __name__ == '__main__':
         config['colosseumcli'], config['capture-pkts'],
         config_params, config['write-config-parameters'],
         config['generic-testbed'], config['node-is-bs'],
-        config['ue-id'], config['mgen'])
+        config['ue-id'], config['mgen'], config['mgen_file'])
 
     # set LTE transceiver state to active
     time.sleep(2)

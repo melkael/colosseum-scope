@@ -1,0 +1,11 @@
+# MGEN script
+# Call as: mgen input mgen-script-tx.mgn
+
+# originate traffic flow
+
+# 50 byte messages, 500 us transfer interval
+0.0 ON 5 UDP DST IP_PLACEHOLDER/PORT_PLACEHOLDER BURST [RANDOM  POISSON [80 1400] EXP 0.05]
+
+
+1200.0 OFF 5
+
